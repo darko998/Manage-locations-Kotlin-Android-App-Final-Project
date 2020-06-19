@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">Darko_Dimitrijevic_RN9418</string>
+    <string name="title">Title</string>
+    <string name="note">Note</string>
+    <string name="close">Close</string>
+    <string name="save">Save</string>
+    <string name="your_location">Your Location</string>
+    <string name="saved_locations">Saved locations</string>
 </resources>
