@@ -6,4 +6,6 @@
     <string name="save">Save</string>
     <string name="your_location">Your Location</string>
     <string name="saved_locations">Saved locations</string>
+    <string name="search_by_title_or_note_content">Search by title or note content</string>
+    <string name="edit">Edit</string>
 </resources>

@@ -4,14 +4,11 @@ import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import android.location.*
-import android.media.browse.MediaBrowser
 import android.os.Build
 import androidx.fragment.app.Fragment
 
 import android.os.Bundle
-import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -34,7 +31,7 @@ import org.koin.androidx.viewmodel.ext.android.sharedViewModel
 import rs.raf.projekat2.darko_dimitrijevic_rn9418.R
 import rs.raf.projekat2.darko_dimitrijevic_rn9418.data.models.LocationAndNote
 import rs.raf.projekat2.darko_dimitrijevic_rn9418.presentation.contracts.LocationContract
-import rs.raf.projekat2.darko_dimitrijevic_rn9418.presentation.states.SaveLocationState
+import rs.raf.projekat2.darko_dimitrijevic_rn9418.presentation.states.LocationState
 import rs.raf.projekat2.darko_dimitrijevic_rn9418.presentation.viewmodels.LocationViewModel
 import timber.log.Timber
 import java.io.IOException
@@ -88,18 +85,18 @@ class LocationFragment : Fragment(R.layout.fragment_location), OnMapReadyCallbac
 
         /** Here we listen on changes in saveDone object, which we created to monitor saving state.
          * If saving was successful state will be Success, if not, it will be Error. */
-        viewModel.saveDone.observe(viewLifecycleOwner, androidx.lifecycle.Observer {
+        viewModel.state.observe(viewLifecycleOwner, androidx.lifecycle.Observer {
             renderState(it)
         })
     }
 
     /** This method just render Toast message depending on the saveDone state. */
-    private fun renderState(state: SaveLocationState) {
+    private fun renderState(state: LocationState) {
         when(state) {
-            is SaveLocationState.Success -> {
+            is LocationState.SaveSuccess -> {
                 Toast.makeText(myContext, "You successfully saved location and note!", Toast.LENGTH_SHORT).show()
             }
-            is SaveLocationState.Error -> {
+            is LocationState.SaveError -> {
                 Toast.makeText(myContext, "Error: " + state.error, Toast.LENGTH_SHORT).show()
             }
         }
@@ -112,7 +109,7 @@ class LocationFragment : Fragment(R.layout.fragment_location), OnMapReadyCallbac
             val title = myContext.et_title.text.toString()
             val note = myContext.et_note.text.toString()
 
-            val locationAndNote = LocationAndNote(currLocation.latitude, currLocation.longitude, title, note, Date().time)
+            val locationAndNote = LocationAndNote(0, currLocation.latitude, currLocation.longitude, title, note, Date().time)
 
             viewModel.saveLocation(locationAndNote)
 
@@ -120,6 +117,11 @@ class LocationFragment : Fragment(R.layout.fragment_location), OnMapReadyCallbac
             myContext.et_title.setText("")
             myContext.et_note.setText("")
 
+        }
+
+        /** Here we set listener for CLOSE button. */
+        myContext.btn_close.setOnClickListener {
+            myContext.finish()
         }
 
     }
@@ -146,11 +148,13 @@ class LocationFragment : Fragment(R.layout.fragment_location), OnMapReadyCallbac
         mMap?.uiSettings?.isZoomControlsEnabled = true
         mMap?.uiSettings?.isZoomGesturesEnabled = true
         mMap?.uiSettings?.isCompassEnabled = true
-        //Initialize Google Play Services
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (ContextCompat.checkSelfPermission(myContext, Manifest.permission.ACCESS_FINE_LOCATION) === PackageManager.PERMISSION_GRANTED) {
                 buildGoogleApiClient()
                 mMap?.isMyLocationEnabled = true
+            } else {
+                Toast.makeText(this.context, "This app features are not available if you don't wan't to give LOCATION permission.", Toast.LENGTH_LONG).show()
             }
         } else {
             buildGoogleApiClient()
@@ -238,11 +242,8 @@ class LocationFragment : Fragment(R.layout.fragment_location), OnMapReadyCallbac
                 val listAddresses = geocoder.getFromLocation(latitude,
                     longitude, 1)
                 if (null != listAddresses && listAddresses.size > 0) {
-                    val state = listAddresses[0].adminArea
                     val country = listAddresses[0].countryName
-                    val subLocality = listAddresses[0].subLocality
-                    markerOptions.title("" + latLng + "," + subLocality + "," + state
-                            + "," + country)
+                    markerOptions.title("" + latLng + "," + country)
                 }
             } catch (e: IOException) {
                 e.printStackTrace()
@@ -259,9 +260,7 @@ class LocationFragment : Fragment(R.layout.fragment_location), OnMapReadyCallbac
                 val listAddresses = geocoder.getFromLocation(latitude,
                     longitude, 1)
                 if (null != listAddresses && listAddresses.size > 0) {
-                    val state = listAddresses[0].adminArea
                     val country = listAddresses[0].countryName
-                    val subLocality = listAddresses[0].subLocality
                     markerOptions.title("" + latLng + "," + country)
                 }
             } catch (e: IOException) {
